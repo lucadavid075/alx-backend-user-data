@@ -8,7 +8,10 @@ import logging
 import mysql.connector
 from typing import List
 
-
+patterns = {
+    'extract': lambda x, y: r'(?P<field>{})=[^{}]*'.format('|'.join(x), y),
+    'replace': lambda x: r'\g<field>={}'.format(x),
+}
 PII_FIELDS = ("name", "email", "phone", "ssn", "password")
 
 
@@ -19,9 +22,8 @@ def filter_datum(
     Obfuscates log message fields and returns
     the obfuscated log message fields
     """
-    pattern_format = r'(?<={0})([^{0}\s]+)(?={0})'
-    pattern = re.compile(pattern_format.format(re.escape(separator)))
-    return pattern.sub(redaction, message)
+    extract, replace = (patterns["extract"], patterns["replace"])
+    return re.sub(extract(fields, separator), replace(redaction), message)
 
 
 def get_logger() -> logging.Logger:
